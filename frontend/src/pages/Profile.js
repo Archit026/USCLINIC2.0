@@ -1,14 +1,14 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
-import { useNavigate, Link } from 'react-router-dom';
-import { getUser, setUser, logoutUser } from '../utils/auth';
-import { toast } from 'react-toastify';
+import { useNavigate } from 'react-router-dom';
+import { getUser, setUser } from '../utils/auth';
 import { API_URL } from '../config/api';
 import DashboardLayout from '../components/DashboardLayout';
 
 const Profile = () => {
   const navigate = useNavigate();
   const user = getUser();
+  const userId = user?._id;
 
   const [formData, setFormData] = useState({
     name: '',
@@ -22,18 +22,11 @@ const Profile = () => {
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState({ text: '', type: '' });
 
-  useEffect(() => {
-    if (!user) {
-      navigate('/');
-      return;
-    }
-    fetchProfile();
-  }, [navigate]);
-
-  const fetchProfile = async () => {
+  const fetchProfile = useCallback(async () => {
+    if (!userId) return;
     try {
-      const res = await axios.get(`${API_URL}/auth/profile/${user._id}`);
-      const data = res.data;
+      const res = await axios.get(`${API_URL}/auth/profile/${userId}`);
+      const data = res.data.user || res.data;
       setFormData({
         name: data.name || '',
         email: data.email || '',
@@ -42,13 +35,23 @@ const Profile = () => {
         gender: data.gender || '',
         address: data.address || ''
       });
+      setMessage({ text: '', type: '' });
     } catch (err) {
       console.error('Error fetching profile:', err);
-      setMessage({ text: 'Failed to load profile data.', type: 'error' });
+      const errorMsg = err.response?.data?.message || err.message || 'Failed to load profile data.';
+      setMessage({ text: errorMsg, type: 'error' });
     } finally {
       setLoading(false);
     }
-  };
+  }, [userId]);
+
+  useEffect(() => {
+    if (!user) {
+      navigate('/');
+      return;
+    }
+    fetchProfile();
+  }, [userId, fetchProfile, navigate]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -73,27 +76,25 @@ const Profile = () => {
       setUser(updatedUser);
       setMessage({ text: 'Profile updated successfully!', type: 'success' });
     } catch (err) {
-      setMessage({ text: err.response?.data?.msg || 'Error updating profile', type: 'error' });
+      const errorData = err.response?.data;
+      let errorMessage = 'Error updating profile';
+      
+      if (errorData?.errors && Array.isArray(errorData.errors)) {
+        // Format validation errors
+        errorMessage = errorData.errors
+          .map(e => `${e.field}: ${e.message}`)
+          .join('; ');
+      } else if (errorData?.message) {
+        errorMessage = errorData.message;
+      }
+      
+      setMessage({ text: errorMessage, type: 'error' });
     } finally {
       setSaving(false);
     }
   };
 
-  const handleLogout = () => {
-    logoutUser();
-    
-    // Show logout success toast
-    toast.success('Logout Successful! 👋', {
-      position: 'top-center',
-      autoClose: 2000,
-      hideProgressBar: false,
-    });
-    
-    // Navigate to main page after showing the notification
-    setTimeout(() => {
-      navigate('/');
-    }, 2000);
-  };
+
 
   if (loading) {
     return (

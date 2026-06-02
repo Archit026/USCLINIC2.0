@@ -37,7 +37,8 @@ function Login() {
       const res = await axios.post(`${API_URL}/auth/login`, {
         email, password, role
       });
-      setUser(res.data.user);
+      // Save user and token
+      setUser(res.data.user, res.data.token);
       
       // Show success toast and reload page after 2 seconds
       toast.success('Login Successful! 🎉', {
@@ -51,7 +52,19 @@ function Login() {
         window.location.reload();
       }, 2000);
     } catch (err) {
-      setError(err.response?.data?.msg || 'Login failed');
+      const errorData = err.response?.data;
+      let errorMessage = 'Login failed';
+      
+      if (errorData?.errors && Array.isArray(errorData.errors)) {
+        // Format validation errors
+        errorMessage = errorData.errors
+          .map(e => `${e.field}: ${e.message}`)
+          .join('; ');
+      } else if (errorData?.message) {
+        errorMessage = errorData.message;
+      }
+      
+      setError(errorMessage);
     } finally {
       setIsLoading(false);
     }
@@ -128,7 +141,6 @@ function Login() {
               >
                 <option value="patient">Patient</option>
                 <option value="doctor">Doctor</option>
-                <option value="admin">Admin</option>
               </select>
             </div>            <button 
               onClick={handleLogin}

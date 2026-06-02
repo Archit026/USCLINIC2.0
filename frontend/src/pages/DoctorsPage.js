@@ -12,9 +12,10 @@ const DoctorsPage = () => {
       try {
         const res = await axios.get(`${API_URL}/auth/doctors`);
         const doctorsData = res.data.doctors || res.data;
-        setDoctors(doctorsData);
+        setDoctors(Array.isArray(doctorsData) ? doctorsData : []);
       } catch (error) {
         console.error('Error fetching doctors:', error);
+        setDoctors([]);
       } finally {
         setLoading(false);
       }

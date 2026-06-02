@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
-import { getUser, logoutUser } from '../utils/auth';
-import { useNavigate, Link } from 'react-router-dom';
+import { getUser } from '../utils/auth';
+import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { API_URL } from '../config/api';
 import DashboardLayout from '../components/DashboardLayout';
@@ -11,15 +11,16 @@ const AdminDashboard = () => {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const user = getUser();
   const navigate = useNavigate();
 
   const fetchDoctors = async () => {
     try {
       const res = await axios.get(`${API_URL}/auth/doctors`);
-      setDoctors(res.data);
+      const doctorsData = res.data.doctors || res.data;
+      setDoctors(Array.isArray(doctorsData) ? doctorsData : []);
     } catch (error) {
       console.error('Error fetching doctors:', error);
+      setDoctors([]);
     }
   };
 
@@ -60,21 +61,7 @@ const AdminDashboard = () => {
     }
   };
 
-  const handleLogout = () => {
-    logoutUser();
-    
-    // Show logout success toast
-    toast.success('Logout Successful! 👋', {
-      position: 'top-center',
-      autoClose: 2000,
-      hideProgressBar: false,
-    });
-    
-    // Navigate to main page after showing the notification
-    setTimeout(() => {
-      navigate('/');
-    }, 2000);
-  };
+
 
   const containerStyle = {
     maxWidth: '800px',
@@ -88,11 +75,7 @@ const AdminDashboard = () => {
     fontFamily: "'Inter', sans-serif"
   };
 
-  const pageStyle = {
-    minHeight: '100vh',
-    background: 'linear-gradient(135deg, #1E40AF 0%, #1E3A8A 100%)',
-    color: '#FFFFFF',
-  };
+
 
   const inputStyle = {
     width: '100%',
@@ -119,11 +102,7 @@ const AdminDashboard = () => {
     boxShadow: '0 4px 14px rgba(42, 125, 225, 0.3)',
   };
 
-  const logoutButtonStyle = {
-    ...buttonStyle,
-    float: 'right',
-    margin: '10px'
-  };
+
 
   const listItemStyle = {
     background: '#F3F8FE',

@@ -1,8 +1,8 @@
 const mongoose = require('mongoose');
 const dns = require('dns');
 
-// Fix for ECONNREFUSED issues on some networks
-dns.setServers(['8.8.8.8', '8.8.4.4']);
+// Fix DNS for MongoDB Atlas SRV record lookup
+dns.setServers(['8.8.8.8', '8.8.4.4', '1.1.1.1']);
 
 /**
  * SECURITY FIX #1: Move credentials to environment variables

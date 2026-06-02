@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { useNavigate } from 'react-router-dom';
 import { setUser } from '../utils/auth';
 import { toast } from 'react-toastify';
 import { API_URL } from '../config/api';
@@ -13,7 +12,6 @@ const AuthModal = ({ isOpen, onClose, initialMode = 'login', onLoginSuccess }) =
   const [role, setRole] = useState('patient');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const navigate = useNavigate();
 
   useEffect(() => {
     if (isOpen) {
@@ -38,7 +36,7 @@ const AuthModal = ({ isOpen, onClose, initialMode = 'login', onLoginSuccess }) =
     try {
       if (mode === 'login') {
         const res = await axios.post(`${API_URL}/auth/login`, { email, password, role });
-        setUser(res.data.user);
+        setUser(res.data.user, res.data.token);
         
         // Show success toast
         toast.success('Login Successful! 🎉', {
@@ -59,7 +57,7 @@ const AuthModal = ({ isOpen, onClose, initialMode = 'login', onLoginSuccess }) =
         
         // Auto login after signup
         const userData = res.data.user || { name, email, role };
-        setUser(userData);
+        setUser(userData, res.data.token);
         
         // Show success toast
         toast.success('Account Created Successfully! 🎉', {
@@ -77,7 +75,18 @@ const AuthModal = ({ isOpen, onClose, initialMode = 'login', onLoginSuccess }) =
         }, 2000);
       }
     } catch (err) {
-      setError(err.response?.data?.msg || `${mode === 'login' ? 'Login' : 'Signup'} failed`);
+      const errorData = err.response?.data;
+      let errorMessage = `${mode === 'login' ? 'Login' : 'Signup'} failed`;
+      
+      if (errorData?.errors && Array.isArray(errorData.errors)) {
+        errorMessage = errorData.errors
+          .map(e => `${e.field}: ${e.message}`)
+          .join('; ');
+      } else if (errorData?.message) {
+        errorMessage = errorData.message;
+      }
+      
+      setError(errorMessage);
       setIsLoading(false);
     }
   };

@@ -1,1 +1,2 @@
-export const API_URL = 'http://localhost:5000';
+// Use environment variable for API URL, fallback to localhost for development
+export const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';

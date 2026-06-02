@@ -37,7 +37,19 @@ function Signup() {
       });
       navigate('/login');
     } catch (err) {
-      setError(err.response?.data?.msg || 'Signup failed');
+      const errorData = err.response?.data;
+      let errorMessage = 'Signup failed';
+      
+      if (errorData?.errors && Array.isArray(errorData.errors)) {
+        // Format validation errors
+        errorMessage = errorData.errors
+          .map(e => `${e.field}: ${e.message}`)
+          .join('; ');
+      } else if (errorData?.message) {
+        errorMessage = errorData.message;
+      }
+      
+      setError(errorMessage);
     } finally {
       setIsLoading(false);
     }
@@ -115,6 +127,14 @@ function Signup() {
                   ...(focusedField === 'password' ? authPageStyles.inputFocus : {})
                 }}
               />
+              <p style={{
+                fontSize: '12px',
+                color: '#666',
+                marginTop: '8px',
+                lineHeight: '1.4'
+              }}>
+                Password must have: 8+ characters, uppercase, lowercase, and a number
+              </p>
             </div>
 
             <div style={authPageStyles.formGroup}>
@@ -131,7 +151,6 @@ function Signup() {
               >
                 <option value="patient">Patient</option>
                 <option value="doctor">Doctor</option>
-                <option value="admin">Admin</option>
               </select>
             </div>            <button 
               onClick={handleSignup}
