@@ -16,7 +16,9 @@ connectDB();
 const allowedOrigins = (process.env.ALLOWED_ORIGINS || 'http://localhost:3000').split(',').map(origin => origin.trim());
 const corsOptions = {
   origin: function (origin, callback) {
-    if (!origin || allowedOrigins.includes(origin)) {
+    const isAllowedVercelOrigin = /^https:\/\/[a-z0-9-]+\.vercel\.app$/i.test(origin || '');
+
+    if (!origin || allowedOrigins.includes(origin) || isAllowedVercelOrigin) {
       callback(null, true);
     } else {
       callback(new Error('Not allowed by CORS'));
