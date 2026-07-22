@@ -24,16 +24,6 @@ const CustomDropdown = ({ options, value, onChange, placeholder, label }) => {
     setIsOpen(false);
   };
 
-  // Get initials from doctor name
-  const getInitials = (name) => {
-    return name
-      .split(' ')
-      .map(n => n[0])
-      .join('')
-      .toUpperCase()
-      .slice(0, 2);
-  };
-
   return (
     <div ref={dropdownRef} style={styles.container}>
       <label style={styles.label}>{label}</label>

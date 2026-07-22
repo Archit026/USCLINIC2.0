@@ -1,7 +1,5 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
-import { getUser } from '../utils/auth';
-import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { API_URL } from '../config/api';
 import DashboardLayout from '../components/DashboardLayout';
@@ -11,7 +9,6 @@ const AdminDashboard = () => {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const navigate = useNavigate();
 
   const fetchDoctors = async () => {
     try {

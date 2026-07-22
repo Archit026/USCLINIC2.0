@@ -1,8 +1,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import axios from 'axios';
-import { getUser, logoutUser } from '../utils/auth';
+import { getUser } from '../utils/auth';
 import { toast } from 'react-toastify';
-import { useNavigate } from 'react-router-dom';
 import patientDashboardStyles from '../styles/patientDashboardStyles';
 import { API_URL } from '../config/api';
 import DashboardLayout from '../components/DashboardLayout';
@@ -16,7 +15,6 @@ const HEADER_FONT_WEIGHT = '800';
 const HEADER_COLOR = '#0B1D3A';
 const SUBTITLE_COLOR = '#64748B';
 const TOAST_DURATION = 2000;
-const LOGOUT_REDIRECT_DELAY = 2000;
 
 /**
  * Utility function to handle appointment card hover effects
@@ -50,8 +48,6 @@ const PatientDashboard = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   
   const user = getUser();
-  const userId = user?._id;
-  const navigate = useNavigate();
 
   /**
    * Fetch active appointments for the current patient
@@ -72,7 +68,7 @@ const PatientDashboard = () => {
       console.error('Error fetching appointments:', error.message);
       toast.error('Unable to load appointments. Please refresh the page.');
     }
-  }, [userId]);
+  }, []);
 
   /**
    * Fetch list of available doctors
@@ -172,23 +168,6 @@ const PatientDashboard = () => {
   const closeModal = () => {
     setShowModal(false);
     setFormData({ doctorId: '', time: '', reason: '' });
-  };
-
-  /**
-   * Handle user logout
-   */
-  const handleLogout = () => {
-    logoutUser();
-    
-    toast.success('Logout successful', {
-      position: 'top-center',
-      autoClose: TOAST_DURATION,
-      hideProgressBar: false,
-    });
-    
-    setTimeout(() => {
-      navigate('/');
-    }, LOGOUT_REDIRECT_DELAY);
   };
 
   /**

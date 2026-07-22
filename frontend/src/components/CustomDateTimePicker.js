@@ -7,7 +7,6 @@ const CustomDateTimePicker = ({ value, onChange, label, minDate }) => {
   const [hour, setHour] = useState(value ? new Date(value).getHours() : 12);
   const [minute, setMinute] = useState(value ? new Date(value).getMinutes() : 0);
   const [period, setPeriod] = useState(value ? (new Date(value).getHours() >= 12 ? 'PM' : 'AM') : 'AM');
-  const [pickerPosition, setPickerPosition] = useState('below');
   const pickerRef = useRef(null);
   const triggerRef = useRef(null);
 
@@ -27,9 +26,6 @@ const CustomDateTimePicker = ({ value, onChange, label, minDate }) => {
       
       // If less than 400px space below, position above
       if (spaceBelow < 400 && spaceAbove > 400) {
-        setPickerPosition('above');
-      } else {
-        setPickerPosition('below');
       }
     }
 

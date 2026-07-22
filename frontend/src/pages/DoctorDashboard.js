@@ -1,8 +1,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import axios from 'axios';
-import { getUser, logoutUser } from '../utils/auth';
+import { getUser } from '../utils/auth';
 import { toast } from 'react-toastify';
-import { useNavigate } from 'react-router-dom';
 import doctorDashboardStyles from '../styles/doctorDashboardStyles';
 import { API_URL } from '../config/api';
 import DashboardLayout from '../components/DashboardLayout';
@@ -11,7 +10,6 @@ import { isActiveAppointment, filterAppointmentsForUser } from '../utils/appoint
 // Constants
 const EMPTY_STATE_ICON = '📋';
 const TOAST_DURATION = 2000;
-const LOGOUT_REDIRECT_DELAY = 2000;
 const HEADER_FONT_SIZE = '28px';
 const HEADER_FONT_WEIGHT = '800';
 const HEADER_COLOR = '#0B1D3A';
@@ -51,8 +49,6 @@ const DoctorDashboard = () => {
   });
   
   const user = getUser();
-  const userId = user?._id;
-  const navigate = useNavigate();
 
   /**
    * Fetch all active appointments for the current doctor
@@ -81,28 +77,11 @@ const DoctorDashboard = () => {
       console.error('Failed to fetch appointments:', error.message);
       toast.error('Unable to load appointments. Please refresh the page.');
     }
-  }, [userId]);
+  }, []);
 
   useEffect(() => {
     fetchAppointments();
   }, [fetchAppointments]);
-
-  /**
-   * Handle user logout and redirect
-   */
-  const handleLogout = () => {
-    logoutUser();
-    
-    toast.success('Logout successful', {
-      position: 'top-center',
-      autoClose: TOAST_DURATION,
-      hideProgressBar: false,
-    });
-    
-    setTimeout(() => {
-      navigate('/');
-    }, LOGOUT_REDIRECT_DELAY);
-  };
 
   /**
    * Toggle appointment details expansion
