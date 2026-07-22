@@ -46,7 +46,7 @@ const Profile = () => {
   }, [userId]);
 
   useEffect(() => {
-    if (!user) {
+    if (!userId) {
       navigate('/');
       return;
     }
