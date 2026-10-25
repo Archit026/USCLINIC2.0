@@ -31,7 +31,8 @@ const createPaymentOrder = async (req, res) => {
     res.status(200).json({
       success: true,
       order,
-      fee: amount 
+      fee: amount,
+      keyId: process.env.RAZORPAY_KEY_ID
     });
   } catch (error) {
     console.error('Error creating payment order:', error);

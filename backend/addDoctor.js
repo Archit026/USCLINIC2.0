@@ -17,16 +17,19 @@ const User = require('./models/User');
 const addDoctor = async () => {
   try {
     // Connect to MongoDB
-    await mongoose.connect(process.env.MONGO_URI, {
-      useNewUrlParser: true,
-      useUnifiedTopology: true,
-    });
+    await mongoose.connect(process.env.MONGO_URI);
     console.log('✅ Connected to MongoDB');
 
     // Check if doctor already exists
     const existingDoctor = await User.findOne({ email: 'utkarsh123@gmail.com' });
     if (existingDoctor) {
-      console.log('⚠️  Doctor already exists with this email');
+      existingDoctor.name = 'Dr. Utkarsh';
+      existingDoctor.password = '123445678';
+      existingDoctor.role = 'doctor';
+      existingDoctor.phone = '+919876543210';
+      existingDoctor.isVerified = true;
+      await existingDoctor.save();
+      console.log('✅ Existing doctor updated and marked as verified');
       console.log('Doctor:', existingDoctor);
       process.exit(0);
     }
@@ -38,6 +41,7 @@ const addDoctor = async () => {
       password: '123445678', // Minimum 8 characters required
       role: 'doctor',
       phone: '+919876543210', // Valid phone format
+      isVerified: true,
       gender: 'male',
       address: 'Medical Center',
     };

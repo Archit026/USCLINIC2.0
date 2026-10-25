@@ -8,6 +8,8 @@ const AuthModal = ({ isOpen, onClose, initialMode = 'login', onLoginSuccess }) =
   const [mode, setMode] = useState(initialMode);
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
+  const [verificationCode, setVerificationCode] = useState('');
+  const [verificationStep, setVerificationStep] = useState(false);
   const [password, setPassword] = useState('');
   const [role, setRole] = useState('patient');
   const [error, setError] = useState('');
@@ -19,6 +21,8 @@ const AuthModal = ({ isOpen, onClose, initialMode = 'login', onLoginSuccess }) =
       setError('');
       setName('');
       setEmail('');
+      setVerificationCode('');
+      setVerificationStep(false);
       setPassword('');
       setRole('patient');
     }
@@ -52,27 +56,22 @@ const AuthModal = ({ isOpen, onClose, initialMode = 'login', onLoginSuccess }) =
         setTimeout(() => {
           window.location.reload();
         }, 2000);
-      } else {
-        const res = await axios.post(`${API_URL}/auth/signup`, { name, email, password, role });
-        
-        // Auto login after signup
-        const userData = res.data.user || { name, email, role };
-        setUser(userData, res.data.token);
-        
-        // Show success toast
-        toast.success('Account Created Successfully! 🎉', {
-          position: 'top-center',
-          autoClose: 2000,
-          hideProgressBar: false,
+      } else if (!verificationStep) {
+        await axios.post(`${API_URL}/auth/signup`, {
+          name, email, password, role
         });
-        
-        // Close modal immediately
+        setVerificationStep(true);
+        toast.success('Verification code sent to your email');
+        setIsLoading(false);
+      } else {
+        const res = await axios.post(`${API_URL}/auth/verify-signup`, {
+          email,
+          code: verificationCode
+        });
+        setUser(res.data.user, res.data.token);
+        toast.success('Account verified successfully! 🎉', { position: 'top-center', autoClose: 2000, hideProgressBar: false });
         onClose();
-        
-        // Reload page after 2 seconds
-        setTimeout(() => {
-          window.location.reload();
-        }, 2000);
+        setTimeout(() => window.location.reload(), 2000);
       }
     } catch (err) {
       const errorData = err.response?.data;
@@ -100,15 +99,15 @@ const AuthModal = ({ isOpen, onClose, initialMode = 'login', onLoginSuccess }) =
           disabled={isLoading}
         >&times;</button>
         
-        <h2 style={styles.title}>{mode === 'login' ? 'Welcome Back' : 'Create Account'}</h2>
+        <h2 style={styles.title}>{mode === 'login' ? 'Welcome Back' : (verificationStep ? 'Verify Your Account' : 'Create Account')}</h2>
         <p style={styles.subtitle}>
-          {mode === 'login' ? 'Sign in to access your dashboard' : 'Join US-Clinic for seamless healthcare'}
+          {mode === 'login' ? 'Sign in to access your dashboard' : (verificationStep ? 'Enter the 6-digit code sent to your email' : 'Join US-Clinic for seamless healthcare')}
         </p>
 
         {error && <div style={styles.error}>{error}</div>}
 
         <form onSubmit={handleSubmit} style={styles.form}>
-          {mode === 'signup' && (
+          {mode === 'signup' && !verificationStep && (
             <div style={styles.inputGroup}>
               <label style={styles.label}>Full Name</label>
               <input
@@ -123,44 +122,34 @@ const AuthModal = ({ isOpen, onClose, initialMode = 'login', onLoginSuccess }) =
             </div>
           )}
 
-          <div style={styles.inputGroup}>
-            <label style={styles.label}>Email Address</label>
-            <input
-              type="email"
-              required
-              value={email}
-              onChange={e => setEmail(e.target.value)}
-              disabled={isLoading}
-              style={styles.input}
-              placeholder="name@example.com"
-            />
-          </div>
+          {(mode === 'login' || (mode === 'signup' && !verificationStep)) && (
+            <div style={styles.inputGroup}>
+              <label style={styles.label}>Email Address</label>
+              <input type="email" required value={email} onChange={e => setEmail(e.target.value)} disabled={isLoading} style={styles.input} placeholder="name@example.com" />
+            </div>
+          )}
 
-          <div style={styles.inputGroup}>
-            <label style={styles.label}>Password</label>
-            <input
-              type="password"
-              required
-              value={password}
-              onChange={e => setPassword(e.target.value)}
-              disabled={isLoading}
-              style={styles.input}
-              placeholder="&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;"
-            />
-          </div>
-
-          <div style={styles.inputGroup}>
-            <label style={styles.label}>I am a...</label>
-            <select
-              value={role}
-              onChange={e => setRole(e.target.value)}
-              disabled={isLoading}
-              style={styles.select}
-            >
-              <option value="patient">Patient</option>
-              <option value="doctor">Doctor</option>
-            </select>
-          </div>
+          {mode === 'signup' && verificationStep && (
+            <div style={styles.inputGroup}>
+              <label style={styles.label}>Verification Code</label>
+              <input type="text" inputMode="numeric" pattern="[0-9]{6}" maxLength="6" required value={verificationCode} onChange={e => setVerificationCode(e.target.value.replace(/\D/g, ''))} disabled={isLoading} style={styles.input} placeholder="123456" />
+            </div>
+          )}
+          {(mode === 'login' || (mode === 'signup' && !verificationStep)) && (
+            <>
+              <div style={styles.inputGroup}>
+                <label style={styles.label}>Password</label>
+                <input type="password" required value={password} onChange={e => setPassword(e.target.value)} disabled={isLoading} style={styles.input} placeholder="&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;" />
+              </div>
+              <div style={styles.inputGroup}>
+                <label style={styles.label}>I am a...</label>
+                <select value={role} onChange={e => setRole(e.target.value)} disabled={isLoading} style={styles.select}>
+                  <option value="patient">Patient</option>
+                  <option value="doctor">Doctor</option>
+                </select>
+              </div>
+            </>
+          )}
 
           <button 
             type="submit" 
@@ -171,7 +160,7 @@ const AuthModal = ({ isOpen, onClose, initialMode = 'login', onLoginSuccess }) =
               cursor: isLoading ? 'not-allowed' : 'pointer'
             }}
           >
-            {isLoading ? 'Please wait...' : (mode === 'login' ? 'Sign In' : 'Create Account')}
+            {isLoading ? 'Please wait...' : (mode === 'login' ? 'Sign In' : (verificationStep ? 'Verify & Create Account' : 'Send Verification Code'))}
           </button>
         </form>
 

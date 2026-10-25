@@ -131,9 +131,30 @@ const PatientDashboard = () => {
     };
     
     try {
+      const orderResponse = await axios.post(`${API_URL}/api/payment/create-order`);
+      const { order, keyId, fee } = orderResponse.data;
+
+      if (!order || !keyId) {
+        throw new Error('Payment order could not be created');
+      }
+
+      await loadRazorpayCheckout();
+      const paymentResponse = await openRazorpayCheckout({
+        key: keyId,
+        order,
+        amount: fee,
+        user
+      });
+
+      await axios.post(`${API_URL}/api/payment/verify`, {
+        razorpay_order_id: paymentResponse.razorpay_order_id,
+        razorpay_payment_id: paymentResponse.razorpay_payment_id,
+        razorpay_signature: paymentResponse.razorpay_signature
+      });
+
       const appointmentResponse = await axios.post(
         `${API_URL}/appointments/create`,
-        payload
+        { ...payload, paymentId: paymentResponse.razorpay_payment_id }
       );
 
       if (appointmentResponse.data.success) {
@@ -154,6 +175,44 @@ const PatientDashboard = () => {
       setIsSubmitting(false);
     }
   };
+
+  const loadRazorpayCheckout = () => new Promise((resolve, reject) => {
+    if (window.Razorpay) {
+      resolve();
+      return;
+    }
+
+    const script = document.createElement('script');
+    script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+    script.onload = resolve;
+    script.onerror = () => reject(new Error('Unable to load Razorpay checkout'));
+    document.body.appendChild(script);
+  });
+
+  const openRazorpayCheckout = ({ key, order, amount, user }) => new Promise((resolve, reject) => {
+    const checkout = new window.Razorpay({
+      key,
+      amount: order.amount,
+      currency: order.currency,
+      name: 'US-CLINIC',
+      description: 'Appointment booking',
+      order_id: order.id,
+      prefill: {
+        name: user.name,
+        email: user.email
+      },
+      notes: {
+        appointmentFee: String(amount)
+      },
+      handler: resolve,
+      modal: {
+        ondismiss: () => reject(new Error('Payment was cancelled'))
+      }
+    });
+
+    checkout.on('payment.failed', () => reject(new Error('Payment failed')));
+    checkout.open();
+  });
 
   /**
    * Open booking modal

@@ -2,6 +2,7 @@ const express = require('express');
 const jwt = require('jsonwebtoken');
 const router = express.Router();
 const User = require('../models/User');
+const { createVerificationCode, hashVerificationCode, sendVerificationCode } = require('../helpers/sendVerificationCode');
 const { authMiddleware, authorizeRole } = require('../middleware/auth');
 const { 
   validateSignup, 
@@ -37,35 +38,53 @@ router.post('/signup', validateSignup, handleValidationErrors, async (req, res) 
       });
     }
     
-    // Create new user (password will be hashed by pre-save middleware)
-    const user = new User({ name, email, password, role });
+    const code = createVerificationCode();
+    const user = new User({ name, email, password, role,
+      verificationCodeHash: hashVerificationCode(code),
+      verificationCodeExpiresAt: new Date(Date.now() + 10 * 60 * 1000) });
     await user.save();
-    
-    // Generate JWT token
-    const token = generateToken(user._id, user.role);
-    
-    // Return user without password
-    const userObj = user.toJSON();
-    
-    res.status(201).json({ 
-      success: true,
-      message: 'Registration successful',
-      token,
-      user: userObj 
-    });
+    try {
+      await sendVerificationCode({ email, code });
+      res.status(201).json({ success: true, message: 'Verification code sent by email', requiresVerification: true });
+    } catch (deliveryError) {
+      await User.findByIdAndDelete(user._id);
+      throw deliveryError;
+    }
   } catch (error) {
     console.error('Signup error:', error);
     
     // Don't expose internal error details
     let message = 'Registration failed';
+    let statusCode = 500;
     if (error.code === 11000) {
       message = 'Email already in use';
+      statusCode = 400;
+    } else if (error.message === 'Email delivery is not configured') {
+      message = 'Email verification is not configured. Add SMTP settings to backend/.env.';
+      statusCode = 503;
     }
     
-    res.status(500).json({ 
+    res.status(statusCode).json({ 
       success: false,
       message 
     });
+  }
+});
+
+router.post('/verify-signup', async (req, res) => {
+  try {
+    const { email, code } = req.body;
+    if (!email || !/^\d{6}$/.test(String(code || ''))) return res.status(400).json({ success: false, message: 'A valid six-digit code and email are required' });
+    const user = await User.findOne({ email }).select('+verificationCodeHash +verificationCodeExpiresAt');
+    if (!user || user.isVerified === true || !user.verificationCodeExpiresAt || user.verificationCodeExpiresAt < new Date() || hashVerificationCode(String(code)) !== user.verificationCodeHash) return res.status(400).json({ success: false, message: 'Invalid or expired verification code' });
+    user.isVerified = true;
+    user.verificationCodeHash = undefined;
+    user.verificationCodeExpiresAt = undefined;
+    await user.save();
+    res.json({ success: true, message: 'Account verified successfully', token: generateToken(user._id, user.role), user: user.toJSON() });
+  } catch (error) {
+    console.error('Signup verification error:', error);
+    res.status(500).json({ success: false, message: 'Verification failed. Please try again.' });
   }
 });
 
@@ -84,6 +103,10 @@ router.post('/login', validateLogin, handleValidationErrors, async (req, res) =>
         success: false,
         message: 'Invalid email or password' 
       });
+    }
+
+    if (user.role !== 'doctor' && user.isVerified === false) {
+      return res.status(403).json({ success: false, message: 'Please verify your account before signing in' });
     }
     
     // Verify password using bcrypt comparison

@@ -15,8 +15,8 @@ const UserSchema = new mongoose.Schema({
   },
   email: {
     type: String,
-    unique: [true, 'Email already exists'],
-    required: [true, 'Email is required'],
+    unique: true,
+    sparse: true,
     lowercase: true,
     match: [/^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/, 'Invalid email format'],
   },
@@ -41,8 +41,13 @@ const UserSchema = new mongoose.Schema({
   },
   phone: {
     type: String,
+    unique: true,
+    sparse: true,
     match: [/^[+]?[(]?[0-9]{1,4}[)]?[-\s.]?[(]?[0-9]{1,4}[)]?[-\s.]?[0-9]{1,9}$/, 'Invalid phone number'],
   },
+  isVerified: { type: Boolean, default: false },
+  verificationCodeHash: { type: String, select: false },
+  verificationCodeExpiresAt: { type: Date, select: false },
   gender: {
     type: String,
     enum: {

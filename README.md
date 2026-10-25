@@ -42,6 +42,20 @@ US-CLINIC is a modern, full-stack clinic management system designed for single-d
 - **Email Service:** Resend for notifications
 - **Other:** dotenv, cors
 
+### Signup verification configuration
+
+Signup now requires a six-digit OTP sent by email. Configure SMTP in `backend/.env`:
+
+```env
+# Email OTP
+SMTP_HOST=smtp.example.com
+SMTP_PORT=587
+SMTP_SECURE=false
+SMTP_USER=your-smtp-user
+SMTP_PASS=your-smtp-password
+SMTP_FROM=US-CLINIC <no-reply@example.com>
+```
+
 ---
 
 ## Getting Started
@@ -73,8 +87,8 @@ Create a `.env` file in the `backend` directory:
 
 ```env
 RESEND_API_KEY=your_resend_api_key_here
-RAZORPAY_KEY_ID=your_razorpay_key_id
-RAZORPAY_KEY_SECRET=your_razorpay_secret_key
+RAZORPAY_KEY_ID=rzp_test_your_key_id
+RAZORPAY_KEY_SECRET=your_razorpay_test_secret
 APPOINTMENT_FEE=100
 ```
 
@@ -107,18 +121,22 @@ The frontend will run on [http://localhost:3000](http://localhost:3000).
 
 ### Razorpay Setup
 
-1. Create a Razorpay account at [razorpay.com](https://razorpay.com)
-2. Get your API keys from the dashboard
-3. Add them to your `.env` file
+1. Create or sign in to a Razorpay account at [razorpay.com](https://razorpay.com).
+2. Open **Test mode** in the Razorpay Dashboard.
+3. Go to **Account & Settings → API Keys → Generate Key**.
+4. Copy the test Key ID and Key Secret into `backend/.env`. Never expose the secret in frontend code or commit `.env`.
+5. Restart the backend after changing `.env`.
+6. Use Razorpay's test payment details in the checkout popup; no real money is charged in Test mode.
 
 ### Payment Flow
 
 1. Patient selects appointment time
-2. Razorpay payment popup appears
-3. Upon successful payment:
+2. A test-mode Razorpay payment order is created
+3. Razorpay payment popup appears
+4. Upon successful payment:
    - Payment is verified
    - Appointment is created
-   - Confirmation notifications are sent
+5. If payment is cancelled or fails, the appointment is not created.
 
 ---
 
@@ -152,7 +170,7 @@ US-CLINIC/
 ### Auth
 
 - `POST /auth/signup` — Register new user (triggers email verification)
-- `POST /auth/verify-email` — Verify OTP code
+- `POST /auth/verify-signup` — Verify email OTP code
 - `POST /auth/login` — Login (only after verification)
 - `GET /auth/doctors` — List all doctors
 
@@ -162,6 +180,11 @@ US-CLINIC/
 - `GET /appointments/all` — Get all appointments (admin/doctor)
 - `PATCH /appointments/status/:appointmentId` — Update appointment status
 - ...and more (see `backend/routes/appointmentRoutes.js`)
+
+### Payments
+
+- `POST /api/payment/create-order` — Create an authenticated Razorpay order
+- `POST /api/payment/verify` — Verify an authenticated Razorpay payment signature
 
 ---
 

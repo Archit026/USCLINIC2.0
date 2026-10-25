@@ -36,6 +36,8 @@ const validateSignup = [
   
   body('email')
     .trim()
+    .notEmpty()
+    .withMessage('Email is required')
     .isEmail()
     .withMessage('Invalid email format')
     .normalizeEmail(),
@@ -54,6 +56,8 @@ const validateSignup = [
 const validateLogin = [
   body('email')
     .trim()
+    .notEmpty()
+    .withMessage('Email is required')
     .isEmail()
     .withMessage('Invalid email format')
     .normalizeEmail(),
