@@ -44,10 +44,14 @@ US-CLINIC is a modern, full-stack clinic management system designed for single-d
 
 ### Signup verification configuration
 
-Signup now requires a six-digit OTP sent by email. Configure SMTP in `backend/.env`:
+Signup now requires a six-digit OTP sent by email. For Render, configure Resend in the service environment:
 
 ```env
-# Email OTP
+# Recommended for Render: HTTPS email delivery
+RESEND_API_KEY=re_your_api_key
+RESEND_FROM=US-CLINIC <onboarding@resend.dev>
+
+# Local SMTP fallback
 SMTP_HOST=smtp.example.com
 SMTP_PORT=587
 SMTP_SECURE=false
@@ -55,6 +59,10 @@ SMTP_USER=your-smtp-user
 SMTP_PASS=your-smtp-password
 SMTP_FROM=US-CLINIC <no-reply@example.com>
 ```
+
+Resend's default `onboarding@resend.dev` sender can send only to the email address
+associated with the Resend account. For other recipients, verify a domain in Resend
+and set `RESEND_FROM` to an address on that domain.
 
 ---
 

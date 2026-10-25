@@ -1,5 +1,6 @@
 require('dotenv').config();
 const crypto = require('crypto');
+const axios = require('axios');
 const nodemailer = require('nodemailer');
 
 const createVerificationCode = () => String(crypto.randomInt(100000, 1000000));
@@ -7,6 +8,22 @@ const hashVerificationCode = (code) => crypto.createHash('sha256').update(code).
 
 async function sendVerificationCode({ email, code }) {
   const message = `Your US-CLINIC verification code is ${code}. It expires in 10 minutes.`;
+
+  if (process.env.RESEND_API_KEY) {
+    await axios.post('https://api.resend.com/emails', {
+      from: process.env.RESEND_FROM || 'US-CLINIC <onboarding@resend.dev>',
+      to: [email],
+      subject: 'Your US-CLINIC verification code',
+      text: message,
+    }, {
+      headers: {
+        Authorization: `Bearer ${process.env.RESEND_API_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      timeout: 10000,
+    });
+    return 'email';
+  }
 
   if (!process.env.SMTP_HOST || !process.env.SMTP_USER || !process.env.SMTP_PASS) {
     throw new Error('Email delivery is not configured');
